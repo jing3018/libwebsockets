@@ -22,8 +22,8 @@
 #include "core/private.h"
 #include <errno.h>
 
-int openssl_websocket_private_data_index,
-	   openssl_SSL_CTX_private_data_index;
+int openssl_websocket_private_data_index = -1,
+	   openssl_SSL_CTX_private_data_index = -1;
 
 int lws_openssl_describe_cipher(struct lws *wsi)
 {
@@ -160,6 +160,7 @@ lws_context_init_ssl_library(const struct lws_context_creation_info *info)
 
 	lwsl_info("Doing SSL library init\n");
 
+#if 0
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
 	SSL_library_init();
 	OpenSSL_add_all_algorithms();
@@ -167,6 +168,12 @@ lws_context_init_ssl_library(const struct lws_context_creation_info *info)
 #else
 	OPENSSL_init_ssl(OPENSSL_INIT_LOAD_SSL_STRINGS, NULL);
 #endif
+#endif
+
+	if (openssl_websocket_private_data_index >= 0
+			|| openssl_SSL_CTX_private_data_index >= 0) {
+		return 0;
+	}
 
 	openssl_websocket_private_data_index =
 		SSL_get_ex_new_index(0, "lws", NULL, NULL, NULL);
@@ -188,6 +195,8 @@ lws_ssl_destroy(struct lws_vhost *vhost)
 		SSL_CTX_free(vhost->tls.ssl_ctx);
 	if (!vhost->tls.user_supplied_ssl_ctx && vhost->tls.ssl_client_ctx)
 		SSL_CTX_free(vhost->tls.ssl_client_ctx);
+
+	return;
 
 // after 1.1.0 no need
 #if (OPENSSL_VERSION_NUMBER <  0x10100000)
@@ -475,6 +484,8 @@ lws_ssl_SSL_CTX_destroy(struct lws_vhost *vhost)
 void
 lws_ssl_context_destroy(struct lws_context *context)
 {
+	return;
+
 // after 1.1.0 no need
 #if (OPENSSL_VERSION_NUMBER <  0x10100000)
 // <= 1.0.1f = old api, 1.0.1g+ = new api
